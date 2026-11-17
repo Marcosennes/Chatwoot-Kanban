@@ -23,6 +23,7 @@
 | 016 | Migración conversation-based → contact-based | Aceptado | [adr/016-migracion-conversation-a-contact-based.md](adr/016-migracion-conversation-a-contact-based.md) |
 | 017 | Desvinculación y apertura open source | Aceptado | [adr/017-desvinculacion-y-apertura-open-source.md](adr/017-desvinculacion-y-apertura-open-source.md) |
 | 018 | Demo autocontenida con mock de Chatwoot | Aceptado | [adr/018-demo-mockup-chatwoot.md](adr/018-demo-mockup-chatwoot.md) |
+| 019 | Automatizaciones de etapa por webhook | Aceptado | [adr/019-automatizaciones-de-etapa-por-webhook.md](adr/019-automatizaciones-de-etapa-por-webhook.md) |
 
 ## Convenciones
 
@@ -51,3 +52,4 @@ Bitácora de trabajo para que el LLM retome contexto rápidamente:
 | 011 | 2026-07-26 | Operaciones no bloqueantes y optimizaciones | [sesiones/011-2026-07-26-non-blocking-optimizaciones.md](sesiones/011-2026-07-26-non-blocking-optimizaciones.md) |
 | 012 | 2026-07-31 | Desvinculación, limpieza y open source | [sesiones/012-2026-07-31-desvinculacion-limpieza-open-source.md](sesiones/012-2026-07-31-desvinculacion-limpieza-open-source.md) |
 | 013 | 2026-08-30 | Demo autocontenida y capturas para el README | [sesiones/013-2026-08-30-demo-mockup-readme.md](sesiones/013-2026-08-30-demo-mockup-readme.md) |
+| 014 | 2026-11-17 | Automatizaciones de etapa por webhook | [sesiones/014-2026-11-17-automatizaciones-etapa-webhooks.md](sesiones/014-2026-11-17-automatizaciones-etapa-webhooks.md) |

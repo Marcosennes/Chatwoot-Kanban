@@ -138,6 +138,8 @@ The board serves as Chatwoot's **Dashboard App** — an iframe embedded in the a
    In Chatwoot admin: *Settings → Webhooks → Add*  
    - `contact_updated` → `https://your-domain/webhooks/contact-updated`  
    - `conversation_updated` → `https://your-domain/webhooks/conversation-updated`
+   - `conversation_created` → `https://your-domain/webhooks/conversation-created` (new contacts enter the first stage)
+   - `message_created` → `https://your-domain/webhooks/message-created` (an agent reply moves the contact from the first to the second stage)
 
 ### Chatwoot Custom Attributes
 
@@ -190,6 +192,8 @@ curl -X POST https://your-domain/kanban/cron/tick
 | GET    | `/kanban/stats/history`               | Audit history                   |
 | POST   | `/webhooks/contact-updated`           | Chatwoot webhook                |
 | POST   | `/webhooks/conversation-updated`      | Chatwoot webhook                |
+| POST   | `/webhooks/conversation-created`      | Auto-place new contacts         |
+| POST   | `/webhooks/message-created`           | Auto-advance on agent reply     |
 
 Full API documentation available at `/docs` when running locally.
 
