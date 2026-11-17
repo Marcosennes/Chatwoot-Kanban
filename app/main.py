@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from app.chatwoot_client import chatwoot_client
 from app.database import close_pool, init_pool
@@ -22,6 +23,11 @@ app.include_router(conversations.router)
 app.include_router(api.router)
 app.include_router(kanban.router)
 app.include_router(webhooks.router)
+
+
+@app.get("/", include_in_schema=False)
+async def root() -> RedirectResponse:
+    return RedirectResponse(url="/kanban")
 
 
 @app.get("/health")
