@@ -141,6 +141,15 @@ The board serves as Chatwoot's **Dashboard App** — an iframe embedded in the a
    - `conversation_created` → `https://your-domain/webhooks/conversation-created` (new contacts enter the first stage)
    - `message_created` → `https://your-domain/webhooks/message-created` (an agent reply moves the contact from the first to the second stage)
 
+### Sidebar entry (optional)
+
+To show a **Kanban** item in Chatwoot's main sidebar, set *Super Admin →
+Settings → Dashboard Scripts* to:
+
+```html
+<script src="https://your-domain/chatwoot-sidebar.js" defer></script>
+```
+
 ### Chatwoot Custom Attributes
 
 Create these **contact** custom attributes in Chatwoot (*Settings → Custom Attributes → Add*):
@@ -181,6 +190,9 @@ curl -X POST https://your-domain/kanban/cron/tick
 | GET    | `/kanban`                             | Kanban board (HTML)             |
 | GET    | `/kanban/dashboard`                   | Dashboard page (HTML)           |
 | GET    | `/kanban/config`                      | Pipeline config & Chatwoot URLs |
+| GET    | `/kanban/notifications`               | Recent customer messages        |
+| GET    | `/kanban/contacts/{id}/conversation`  | Latest conversation of contact  |
+| GET    | `/chatwoot-sidebar.js`                | Chatwoot sidebar entry script   |
 | GET    | `/kanban/board`                       | Board data with task sync       |
 | PATCH  | `/kanban/board/{contact_id}/stage`    | Move contact to stage           |
 | POST   | `/kanban/tasks`                       | Create task                     |

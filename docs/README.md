@@ -24,6 +24,7 @@
 | 017 | Desvinculación y apertura open source | Aceptado | [adr/017-desvinculacion-y-apertura-open-source.md](adr/017-desvinculacion-y-apertura-open-source.md) |
 | 018 | Demo autocontenida con mock de Chatwoot | Aceptado | [adr/018-demo-mockup-chatwoot.md](adr/018-demo-mockup-chatwoot.md) |
 | 019 | Automatizaciones de etapa por webhook | Aceptado | [adr/019-automatizaciones-de-etapa-por-webhook.md](adr/019-automatizaciones-de-etapa-por-webhook.md) |
+| 020 | Entrada en sidebar, acceso a conversación y notificaciones | Aceptado | [adr/020-entrada-sidebar-y-notificaciones.md](adr/020-entrada-sidebar-y-notificaciones.md) |
 
 ## Convenciones
 

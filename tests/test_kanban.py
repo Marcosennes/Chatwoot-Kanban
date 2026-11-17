@@ -340,3 +340,70 @@ def test_dashboard_page(client):
     response = client.get("/kanban/dashboard")
     assert response.status_code == 200
     assert "Volver al Kanban" in response.text
+
+
+def test_latest_contact_conversation_returns_most_recent(client):
+    with patch("app.routers.kanban.chatwoot_client") as mock_client:
+        mock_client.get_contact_conversations = AsyncMock(
+            return_value=[
+                {"id": 10, "last_activity_at": 100},
+                {"id": 12, "last_activity_at": 300},
+                {"id": 11, "last_activity_at": 200},
+            ]
+        )
+        mock_client.account_id = 1
+        mock_client.base_url = "https://test.chatwoot.com"
+        response = client.get("/kanban/contacts/7/conversation")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["conversation_id"] == 12
+    assert body["path"] == "/app/accounts/1/conversations/12"
+    assert body["url"].endswith("/app/accounts/1/conversations/12")
+
+
+def test_latest_contact_conversation_without_conversations(client):
+    with patch("app.routers.kanban.chatwoot_client") as mock_client:
+        mock_client.get_contact_conversations = AsyncMock(return_value=[])
+        response = client.get("/kanban/contacts/7/conversation")
+
+    assert response.status_code == 404
+
+
+def _conversation(conv_id: int, unread: int, message_type: int, activity: int):
+    return {
+        "id": conv_id,
+        "unread_count": unread,
+        "last_activity_at": activity,
+        "meta": {"sender": {"id": conv_id * 10, "name": f"C{conv_id}"}},
+        "last_non_activity_message": {
+            "content": "oi",
+            "message_type": message_type,
+        },
+    }
+
+
+def test_notifications_lists_customer_messages_newest_first(client):
+    conversations = [
+        _conversation(1, 0, 1, 100),
+        _conversation(2, 2, 0, 300),
+        _conversation(3, 0, 0, 200),
+    ]
+    with patch("app.routers.kanban.chatwoot_client") as mock_client:
+        mock_client.list_conversations = AsyncMock(return_value=conversations)
+        mock_client.account_id = 1
+        response = client.get("/kanban/notifications")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["unread"] == 1
+    assert [i["conversation_id"] for i in body["items"]] == [2, 3]
+    assert body["items"][0]["path"] == "/app/accounts/1/conversations/2"
+
+
+def test_notifications_chatwoot_error(client):
+    with patch("app.routers.kanban.chatwoot_client") as mock_client:
+        mock_client.list_conversations = AsyncMock(side_effect=Exception("down"))
+        response = client.get("/kanban/notifications")
+
+    assert response.status_code == 502

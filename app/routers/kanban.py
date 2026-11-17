@@ -381,6 +381,82 @@ async def kanban_config():
     }
 
 
+_NOTIFICATION_LIMIT = 15
+_INCOMING_MESSAGE = 0
+
+
+def _to_notification(conversation: dict) -> dict:
+    sender = (conversation.get("meta") or {}).get("sender") or {}
+    message = conversation.get("last_non_activity_message") or {}
+    return {
+        "conversation_id": conversation["id"],
+        "contact_id": sender.get("id"),
+        "contact_name": sender.get("name") or "",
+        "thumbnail": sender.get("thumbnail") or "",
+        "content": message.get("content") or "",
+        "has_attachments": bool(message.get("attachments")),
+        "unread_count": conversation.get("unread_count") or 0,
+        "last_activity_at": conversation.get("last_activity_at") or 0,
+        "path": (
+            f"/app/accounts/{chatwoot_client.account_id}"
+            f"/conversations/{conversation['id']}"
+        ),
+    }
+
+
+@router.get("/notifications")
+async def notifications():
+    """Lists conversations whose latest message came from the customer.
+
+    Read state comes from Chatwoot's ``unread_count``, so opening the
+    conversation in Chatwoot marks it as read.
+    """
+    try:
+        conversations = await chatwoot_client.list_conversations()
+    except Exception as exc:
+        logger.error("Failed to fetch notifications: %s", exc)
+        raise HTTPException(
+            status_code=502, detail=f"Chatwoot API error: {exc}"
+        ) from exc
+
+    incoming = [
+        c
+        for c in conversations
+        if (c.get("last_non_activity_message") or {}).get("message_type")
+        == _INCOMING_MESSAGE
+        or (c.get("unread_count") or 0) > 0
+    ]
+    incoming.sort(key=lambda c: c.get("last_activity_at") or 0, reverse=True)
+    items = [_to_notification(c) for c in incoming[:_NOTIFICATION_LIMIT]]
+    return {
+        "unread": sum(1 for c in incoming if (c.get("unread_count") or 0) > 0),
+        "items": items,
+    }
+
+
+@router.get("/contacts/{contact_id}/conversation")
+async def latest_contact_conversation(contact_id: int):
+    """Returns the Chatwoot URL of the contact's most recent conversation."""
+    try:
+        conversations = await chatwoot_client.get_contact_conversations(contact_id)
+    except Exception as exc:
+        logger.error("Failed to fetch conversations for %s: %s", contact_id, exc)
+        raise HTTPException(
+            status_code=502, detail=f"Chatwoot API error: {exc}"
+        ) from exc
+
+    if not conversations:
+        raise HTTPException(status_code=404, detail="contact has no conversations")
+
+    latest = max(conversations, key=lambda c: c.get("last_activity_at") or 0)
+    path = (
+        f"/app/accounts/{chatwoot_client.account_id}"
+        f"/conversations/{latest['id']}"
+    )
+    base = (settings.chatwoot_frontend_url or chatwoot_client.base_url).rstrip("/")
+    return {"conversation_id": latest["id"], "path": path, "url": base + path}
+
+
 @router.get("/board")
 async def kanban_board(stage: str | None = None):
     cached = _get_cached_board(stage)

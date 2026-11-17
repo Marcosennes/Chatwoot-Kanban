@@ -76,6 +76,74 @@ body {
   z-index: 10;
 }
 
+.notif { position: relative; margin-left: auto; }
+.notif-bell {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  border: 1px solid rgb(var(--border));
+  border-radius: 6px;
+  background: rgb(var(--bg-card));
+  color: rgb(var(--text-secondary));
+  cursor: pointer;
+}
+.notif-bell:hover { background: rgb(var(--bg-surface)); color: rgb(var(--text-primary)); }
+.notif-bell svg { width: 16px; height: 16px; }
+.notif-bell.ring svg { animation: notif-ring 0.6s ease-in-out 2; transform-origin: 50% 10%; }
+@keyframes notif-ring {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(14deg); }
+  75% { transform: rotate(-14deg); }
+}
+@media (prefers-reduced-motion: reduce) { .notif-bell.ring svg { animation: none; } }
+.notif-badge {
+  position: absolute; top: -6px; right: -6px;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9px;
+  background: rgb(var(--red)); color: #fff;
+  font-size: 11px; font-weight: 600; line-height: 18px; text-align: center;
+  border: 2px solid rgb(var(--bg-page));
+  box-sizing: content-box;
+}
+.notif-panel {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(440px, 70vh); overflow-y: auto;
+  background: rgb(var(--bg-card));
+  border: 1px solid rgb(var(--border));
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  z-index: 30;
+}
+.notif-panel-title {
+  padding: 10px 12px; font-size: 13px; font-weight: 600;
+  color: rgb(var(--text-primary));
+  border-bottom: 1px solid rgb(var(--border));
+}
+.notif-empty { padding: 20px 12px; font-size: 13px; color: rgb(var(--text-muted)); text-align: center; }
+.notif-item {
+  display: flex; gap: 10px; width: 100%;
+  padding: 10px 12px; border: 0; border-bottom: 1px solid rgb(var(--border));
+  background: transparent; text-align: left; cursor: pointer; font: inherit;
+}
+.notif-item:last-child { border-bottom: 0; }
+.notif-item:hover { background: rgb(var(--bg-surface)); }
+.notif-item.unread { background: rgb(var(--accent) / 0.06); }
+.notif-item.unread:hover { background: rgb(var(--accent) / 0.12); }
+.notif-body { flex: 1; min-width: 0; }
+.notif-row { display: flex; align-items: center; gap: 6px; }
+.notif-name {
+  flex: 1; min-width: 0; font-size: 13px; color: rgb(var(--text-primary));
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.notif-item.unread .notif-name { font-weight: 600; }
+.notif-time { font-size: 11px; color: rgb(var(--text-muted)); flex-shrink: 0; }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--accent)); flex-shrink: 0; }
+.notif-msg {
+  margin-top: 2px; font-size: 12px; color: rgb(var(--text-secondary));
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
 .kanban-header select {
   font-size: 13px;
   padding: 5px 10px;
@@ -226,6 +294,25 @@ body {
   overflow: hidden;
   margin-top: 2px;
 }
+.card-open-chat {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgb(var(--text-muted));
+  cursor: pointer;
+}
+.card-open-chat:hover {
+  background: rgb(var(--border));
+  color: rgb(var(--text-primary));
+}
+.card-open-chat:disabled { opacity: 0.5; cursor: wait; }
+.card-open-chat svg { width: 15px; height: 15px; }
 .card-time {
   font-size: 11px;
   color: rgb(var(--text-muted));
@@ -663,6 +750,43 @@ function openContact(id) {
   if (url) window.open(url, '_blank');
 }
 
+async function openConversation(contactId, button) {
+  if (button) button.disabled = true;
+  try {
+    const res = await fetch(`/kanban/contacts/${contactId}/conversation`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showToast(
+        res.status === 404 ? 'Este contato não tem conversas' : (data.detail || 'Erro ao abrir conversa'),
+        'error',
+      );
+      return;
+    }
+    navigateInChatwoot(data.path, data.url);
+  } catch (err) {
+    showToast('Erro ao abrir conversa', 'error');
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function navigateInChatwoot(path, url) {
+  if (window.parent === window) {
+    window.open(url, '_blank');
+    return;
+  }
+  let handled = false;
+  const onAck = (event) => {
+    if (event.data && event.data.type === 'kanban:navigate-ack') handled = true;
+  };
+  window.addEventListener('message', onAck);
+  window.parent.postMessage({ type: 'kanban:navigate', path }, '*');
+  setTimeout(() => {
+    window.removeEventListener('message', onAck);
+    if (!handled) window.open(url, '_blank');
+  }, 400);
+}
+
 function openTaskModal(cardData) {
   currentModalCardId = cardData.id;
   stopPolling();
@@ -916,6 +1040,105 @@ function resetStateFilter() {
   if (sel) sel.value = '';
 }
 
+const NOTIF_POLL_MS = 10000;
+const BELL_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
+  <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+</svg>`;
+const notifState = { items: [], unread: 0, open: false, ring: false };
+const baseTitle = document.title;
+
+async function loadNotifications() {
+  try {
+    const res = await fetch('/kanban/notifications');
+    if (!res.ok) return;
+    const data = await res.json();
+    notifState.ring = (data.unread || 0) > notifState.unread;
+    notifState.items = data.items || [];
+    notifState.unread = data.unread || 0;
+    document.title = notifState.unread ? `(${notifState.unread}) ${baseTitle}` : baseTitle;
+    renderNotifications();
+  } catch (err) {
+    console.error('Notifications refresh failed:', err);
+  }
+}
+
+function notificationSnippet(item) {
+  if (item.content) return escapeHtml(item.content);
+  return item.has_attachments ? '📎 Anexo' : '';
+}
+
+function renderNotifications() {
+  const root = document.getElementById('notif-root');
+  if (!root) return;
+  const { items, unread, open } = notifState;
+  const badge = unread ? `<span class="notif-badge">${unread > 99 ? '99+' : unread}</span>` : '';
+  const list = items.length
+    ? items.map((item, i) => `
+        <button type="button" class="notif-item${item.unread_count ? ' unread' : ''}" data-index="${i}">
+          <div class="card-avatar">${item.thumbnail ? `<img src="${escapeHtml(item.thumbnail)}" alt="">` : escapeHtml(initials(item.contact_name))}</div>
+          <div class="notif-body">
+            <div class="notif-row">
+              <span class="notif-name">${escapeHtml(item.contact_name || 'Sem nome')}</span>
+              <span class="notif-time">${timeAgo(item.last_activity_at)}</span>
+              ${item.unread_count ? '<span class="notif-dot" title="Não lida"></span>' : ''}
+            </div>
+            <div class="notif-msg">${notificationSnippet(item)}</div>
+          </div>
+        </button>`).join('')
+    : '<div class="notif-empty">Nenhuma mensagem nova</div>';
+
+  root.innerHTML = `
+    <button type="button" class="notif-bell${notifState.ring ? ' ring' : ''}" id="notif-bell"
+      aria-haspopup="true" aria-expanded="${open}"
+      title="${unread ? `${unread} conversa(s) não lida(s)` : 'Notificações'}">
+      ${BELL_SVG}${badge}
+    </button>
+    ${open ? `<div class="notif-panel" role="menu">
+      <div class="notif-panel-title">Mensagens recentes</div>${list}</div>` : ''}
+  `;
+  notifState.ring = false;
+
+  root.querySelector('#notif-bell').addEventListener('click', (e) => {
+    e.stopPropagation();
+    notifState.open = !notifState.open;
+    renderNotifications();
+  });
+  root.querySelectorAll('.notif-item').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const item = notifState.items[Number(btn.dataset.index)];
+      if (!item) return;
+      notifState.open = false;
+      renderNotifications();
+      const base = (chatwootFrontendUrl || chatwootUrl).replace(/\/+$/, '');
+      navigateInChatwoot(item.path, base + item.path);
+    });
+  });
+}
+
+document.addEventListener('click', (e) => {
+  if (!notifState.open) return;
+  if (e.target.closest && e.target.closest('#notif-root')) return;
+  notifState.open = false;
+  renderNotifications();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && notifState.open) {
+    notifState.open = false;
+    renderNotifications();
+  }
+});
+
+function startNotifications() {
+  loadNotifications();
+  setInterval(() => { if (isTabVisible) loadNotifications(); }, NOTIF_POLL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) loadNotifications();
+  });
+}
+
 function renderBoard(data) {
   const columns = data.columns || [];
   const app = document.getElementById('app');
@@ -941,9 +1164,11 @@ function renderBoard(data) {
       </select>
       <button class="btn" id="refresh-btn">Actualizar</button>
       <a href="/kanban/dashboard" class="btn">Dashboard</a>
+      <div class="notif" id="notif-root"></div>
     </div>
     <div class="board" id="board"></div>
   `;
+  renderNotifications();
 
   document.getElementById('pipeline-select').addEventListener('change', () => {
     activeFilter = '';
@@ -1025,6 +1250,13 @@ function createCard(card) {
     <div class="card-contact">
       <div class="card-avatar">${card.thumbnail ? `<img src="${card.thumbnail}" alt="">` : initials(card.contact_name)}</div>
       <div class="card-name">${card.contact_name}</div>
+      <button type="button" class="card-open-chat" draggable="false"
+        title="Abrir conversa" aria-label="Abrir conversa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+        </svg>
+      </button>
     </div>
     ${card.task ? renderTaskBadge(card.task) : ''}
     <div class="card-time">${timeAgo(card.last_activity_at)}</div>
@@ -1039,6 +1271,13 @@ function createCard(card) {
     }));
   });
   el.addEventListener('dragend', () => el.classList.remove('dragging'));
+
+  const chatBtn = el.querySelector('.card-open-chat');
+  chatBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+  chatBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openConversation(card.id, chatBtn);
+  });
 
   el.addEventListener('click', () => {
     openTaskModal({
@@ -1181,6 +1420,7 @@ async function init() {
     lastGeneratedAt = data.generated_at || null;
     renderBoard(data);
     startPolling();
+    startNotifications();
   } catch (err) {
     const detail = err.message || 'Error desconocido';
     document.getElementById('app').innerHTML =

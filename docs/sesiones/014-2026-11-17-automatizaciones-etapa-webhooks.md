@@ -24,7 +24,15 @@ agente lo pasa a la siguiente etapa.
    de la 1ª a la 2ª etapa; nunca retrocede.
 4. Helper común `_move_contact_stage` con audit log (`source="webhook"`) e
    invalidación de cache. Decisión documentada en ADR-019.
-5. Tests: 6 nuevos (38 en total), Ruff limpio.
+5. **Ítem "Kanban" en el sidebar de Chatwoot** vía `DASHBOARD_SCRIPTS`
+   (`/chatwoot-sidebar.js`), con el tablero en un panel junto al menú.
+6. **Botón "Abrir conversa" en la tarjeta** (`GET
+   /kanban/contacts/{id}/conversation`), navegando con el router de Chatwoot
+   cuando el tablero está dentro del panel.
+7. **Campanita de notificaciones** en el header del tablero (`GET
+   /kanban/notifications`), con badge de no leídas basado en `unread_count`.
+   Decisiones 5–7 documentadas en ADR-020.
+8. Tests: 11 nuevos (43 en total), Ruff limpio.
 
 ## Verificación
 
@@ -32,6 +40,9 @@ Chatwoot 4.19.1-ce local en la red `chatwoot_shared`, widget web de prueba:
 
 - Conversación nueva desde el widget → contacto aparece en la 1ª columna.
 - Respuesta de agente vía API → tarjeta pasa a la 2ª columna.
+- Mensaje nuevo de cliente → aparece como no leído en `/kanban/notifications`.
+- `DASHBOARD_SCRIPTS` inyectado en el HTML del panel de Chatwoot. El ítem del
+  sidebar y la navegación no se verificaron con navegador automatizado.
 
 ## Notas de entorno
 
@@ -45,3 +56,4 @@ Chatwoot 4.19.1-ce local en la red `chatwoot_shared`, widget web de prueba:
 - Validar la firma HMAC de Chatwoot 4.x y habilitar
   `CHATWOOT_WEBHOOK_SECRET`.
 - Evaluar hacer configurables las reglas (etapa origen/destino) vía env.
+- Configurar `DASHBOARD_SCRIPTS` con la URL pública del plugin en producción.

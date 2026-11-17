@@ -103,6 +103,13 @@ class ChatwootClient:
         resp = await self._request("POST", url, json=body)
         return resp.json()
 
+    async def list_conversations(self, status: str = "all", page: int = 1) -> list:
+        url = f"{self._account_path}/conversations"
+        params = {"status": status, "assignee_type": "all", "page": page}
+        resp = await self._request("GET", url, params=params)
+        data = resp.json().get("data") or {}
+        return data.get("payload") or []
+
     async def get_contact(self, contact_id: int) -> dict:
         url = f"{self._account_path}/contacts/{contact_id}"
         resp = await self._request("GET", url)
